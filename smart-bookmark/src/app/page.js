@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-
 import {
   Bookmark,
   LogOut,
@@ -56,34 +55,60 @@ export default function Home() {
     setBookmarks(data || []);
   };
 
-  const addBookmark = async () => {
-    if (!title || !url || urlError) return;
-    await supabase.from("bookmarks").insert({
+const addBookmark = async () => {
+  if (!title || !url || urlError) return;
+
+  const { data } = await supabase
+    .from("bookmarks")
+    .insert({
       title,
       url,
       user_id: user.id,
-    });
-    setTitle("");
-    setUrl("");
-    setUrlError("");
-  };
+    })
+    .select()
+    .single();
+
+  if (data) setBookmarks(prev => [data, ...prev]);
+
+  setTitle("");
+  setUrl("");
+  setUrlError("");
+};
+
 
   const deleteBookmark = async (id) => {
     await supabase.from("bookmarks").delete().eq("id", id);
   };
 
-  useEffect(() => {
-    getUser();
-    const channel = supabase
-      .channel("realtime bookmarks")
+useEffect(() => {
+  getUser();
+
+  let channel;
+
+  supabase.auth.getUser().then(({ data }) => {
+    if (!data.user) return;
+
+    channel = supabase
+      .channel("user-bookmarks")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "bookmarks" },
-        () => getUser()
+        {
+          event: "*",
+          schema: "public",
+          table: "bookmarks",
+          filter: `user_id=eq.${data.user.id}`,
+        },
+        () => {
+          loadBookmarks(data.user.id);
+        }
       )
       .subscribe();
-    return () => supabase.removeChannel(channel);
-  }, []);
+  });
+
+  return () => {
+    if (channel) supabase.removeChannel(channel);
+  };
+}, []);
 
   const login = async () => {
     await supabase.auth.signInWithOAuth({ provider: "google" });
