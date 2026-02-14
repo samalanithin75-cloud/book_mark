@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+Smart Bookmark
+A simple real-time bookmark manager where users log in using Google and save personal bookmarks.
+Each user can only see and manage their own bookmarks. Updates appear instantly across tabs without refresh.
 
-## Getting Started
+Live Demo
+https://book-mark-a41c.vercel.app/
 
-First, run the development server:
+Tech Stack
+Next.js (App Router)
+Supabase (Auth + Database + Realtime)
+Google OAuth
+Tailwind CSS
+Vercel Deployment
 
-```bash
+ Features
+Google login (OAuth only — no passwords)
+Add bookmarks (title + URL)
+Delete bookmarks
+Private per-user data (Row Level Security)
+Real-time updates across tabs
+Fully deployed production app
+
+ Database Security (RLS)
+Bookmarks are protected using Supabase Row Level Security:
+Users can only view their own bookmarks
+Users can only insert their own bookmarks
+Users can only delete their own bookmarks
+This ensures complete data isolation between users.
+
+Real-time Mechanism
+
+Supabase Realtime subscriptions listen to database changes.
+When a bookmark is added or deleted:
+Database triggers event
+Supabase pushes update via websocket
+UI updates automatically without refresh
+
+Problems Faced & Solutions
+1. OAuth redirect going to localhost after deployment
+Problem: After Google login, the app redirected to localhost:3000 instead of the production URL.
+Cause: Supabase Auth URL configuration was still pointing to local environment.
+Solution:
+Added deployed domain in Supabase:
+Authentication → URL Configuration
+Site URL → https://book-mark-eight-iota.vercel.app
+Redirect URLs → https://book-mark-eight-iota.vercel.app/**
+
+2. Vercel build failed (package.json not found)
+
+Problem:
+Could not read package.json
+Cause: Next.js app was inside a subfolder (smart-bookmark), but Vercel was building from root.
+Solution:
+Set Vercel Root Directory:
+Project Settings → Root Directory → smart-bookmark
+3. Realtime UI not updating after insert
+Problem: Bookmark appeared only after refresh.
+Cause: Supabase realtime triggers asynchronously and UI state wasn't updated immediately.
+Solution:
+Added optimistic UI update + realtime listener to sync state instantly.
+4. Module not found errors in deployment
+Problem:
+Can't resolve @supabase/supabase-js
+Cause: Dependency missing in production package.json.
+Solution: Added dependency:
+npm install @supabase/supabase-js
+
+🧪 How to Run Locally
+git clone https://github.com/samalanithin75-cloud/book_mark
+cd smart-bookmark
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+Create .env.local
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+NEXT_PUBLIC_SUPABASE_URL=your_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
 
-## Learn More
+📌 What I Learned
 
-To learn more about Next.js, take a look at the following resources:
+Implementing secure authentication using OAuth
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Row Level Security design in real production
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Real-time systems using WebSockets
 
-## Deploy on Vercel
+Production deployment issues and debugging
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Environment configuration across local and cloud
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+                                                                                                            Author
+                                                                                                            Nithin
